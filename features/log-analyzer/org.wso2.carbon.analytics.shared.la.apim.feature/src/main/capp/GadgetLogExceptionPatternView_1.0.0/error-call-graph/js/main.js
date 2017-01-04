@@ -28,9 +28,11 @@ var svrUrl = gadgetUtil.getGadgetSvrUrl(prefs.getString(PARAM_TYPE));
 var client = new AnalyticsClient().init(null,null,svrUrl);
 var isArtifact = false;
 var pubdata = [];
-var graph_id;
 var classNames = [];
 var messages = [];
+var strPattern;
+var classNamesIds = [];
+var messageIds = [];
 
 function initialize() {
     $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Please click on a View button from the above table" +
@@ -44,8 +46,6 @@ $(document).ready(function () {
 
 function fetch() {
     receivedData.length = 0;
-    var classNamesIds = [];
-    var messageIds = [];
     var queryInfo;
     var queryForSearchCount = {
         tableName: "LOGANALYZER",
@@ -76,13 +76,32 @@ function fetch() {
                                 content: obj[i].values._content,
                                 timestamp: parseInt(obj[i].values._eventTimeStamp)
                             }]);
-                            classNames.push(obj[i].values._class);
-                            message.push(obj[i].values._content);
+                            //classNames.push(obj[i].values._class);
+                            //message.push(obj[i].values._content);
+                            //just for testing-------
+
+                            //---------------
                         }
                     }
-                    classNames = classNames.unique();
-                    message = message.unique();
-                    fetchIds(0);
+                    //just for testing-------
+                    //classNames = classNames.unique();
+                    //message = message.unique();
+                    //---------------
+                    classNames = ["org.wso2.carbon.databridge.agent.endpoint.DataEndpointGroup",
+                    "log-analyzer-proxy.jag",
+                    "org.wso2.carbon.apimgt.impl.UserAwareAPIProvider",
+                    "JAGGERY.site.blocks.item-add.ajax.remove:jag",
+                    "org.wso2.carbon.databridge.agent.endpoint.DataEndpointConnectionWorker",
+                    "org.wso2.andes.configuration.qpid.ServerConfiguration"];
+
+                    message = ["Connection refused",
+                    "Unable to send events to the endpoint.",
+                    "Exception occurred while accessing sevices",
+                    "Error loading properties from file: access-log.properties",
+                    "No receiver is reachable at reconnection, will try to reconnect every 30 sec",
+                    "Cannot remove the API as active subscriptions exist."];
+                    fetchClassIds(0);
+                    fetchMessageIds(0);
                 }
             }, function (error) {
                 console.log(error);
@@ -96,11 +115,12 @@ function fetch() {
         onError(error);
     });
 }
-function fetchIds(arrayIndex){
+function fetchClassIds(arrayIndex){
+    var str = "\""+classNames[arrayIndex]+"\"";
     var queryForSearchCount = {
         tableName: "EXCEPTION_CLASS_NAMES",
         searchParams: {
-            query: "class_name:"+classNames[arrayIndex]+"",
+            query: "class_name:" + str + ""
         }
     };
     client.searchCount(queryForSearchCount,function(d){
@@ -109,7 +129,7 @@ function fetchIds(arrayIndex){
             queryInfo = {
                 tableName: "EXCEPTION_CLASS_NAMES",
                 searchParams: {
-                    query: "class_name:"+classNames[arrayIndex]+"",
+                    query: "class_name:" + str + "",
                     start: 0, //starting index of the matching record set
                     count: totalRecordCount //page size for pagination
                 }
@@ -117,9 +137,12 @@ function fetchIds(arrayIndex){
             client.search(queryInfo,function(d){
                 if (d["status"] === "success") {
                     var obj = JSON.parse(d["message"]);
-                    console.log(obj);
+                    classNamesIds.push([{
+                        id: obj[0].values.id,
+                        class_name: obj[0].values.class_name
+                    }]);
                     if(classNames.length > arrayIndex){
-                        fetchIds(++arrayIndex);
+                        fetchClassIds(++arrayIndex);
                     }else{
                         console.log("done");
                     }
@@ -135,7 +158,54 @@ function fetchIds(arrayIndex){
         error.message = "Internal server error while data indexing.";
         onError(error);
     });
+    console.log(classNamesIds);
 }
+function fetchMessageIds(arrayIndex){
+    var str = "\""+message[arrayIndex]+"\"";
+    var queryForSearchCount = {
+        tableName: "EXCEPTION_MESSAGE_TABLE",
+        searchParams: {
+            query: "message:" + str + ""
+        }
+    };
+    client.searchCount(queryForSearchCount,function(d){
+        if (d["status"] === "success" && d["message"]>0) {
+            var totalRecordCount = d["message"];
+            queryInfo = {
+                tableName: "EXCEPTION_MESSAGE_TABLE",
+                searchParams: {
+                    query: "message:" + str + "",
+                    start: 0, //starting index of the matching record set
+                    count: totalRecordCount //page size for pagination
+                }
+            };
+            client.search(queryInfo,function(d){
+                if (d["status"] === "success") {
+                    var obj = JSON.parse(d["message"]);
+                    messageIds.push([{
+                        id: obj[0].values.id,
+                        message: obj[0].values.message
+                    }]);
+                    if(classNames.length > arrayIndex){
+                        fetchMessageIds(++arrayIndex);
+                    }else{
+                        console.log("done");
+                    }
+                }
+            },function(error){
+                console.log(error);
+                error.message = "Internal server error while data indexing.";
+                onError(error);
+            });
+        }
+    },function(error){
+        console.log(error);
+        error.message = "Internal server error while data indexing.";
+        onError(error);
+    });
+    console.log(messageIds);
+}
+
 
 Array.prototype.contains = function(v) {
     for(var i = 0; i < this.length; i++) {
