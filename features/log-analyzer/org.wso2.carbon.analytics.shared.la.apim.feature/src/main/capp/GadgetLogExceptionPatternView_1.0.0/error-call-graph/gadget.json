@@ -1,0 +1,21 @@
+{
+  "id": "Error_Call_Graph",
+  "title": "Error Call Graph",
+  "type": "gadget",
+  "thumbnail": "store://gadget/error-call-graph/index.png",
+  "data": {
+    "url": "store://gadget/error-call-graph/index.xml"
+  },
+  "notify": {
+    "publisher": {
+      "type": "filtered-classes",
+      "description": "This notifies selected exception pattern filter"
+    }
+  },
+  "listen": {
+    "subscriber": {
+      "type": "filter-range",
+      "description": "Used to listen to any filters"
+    }
+  }
+}
