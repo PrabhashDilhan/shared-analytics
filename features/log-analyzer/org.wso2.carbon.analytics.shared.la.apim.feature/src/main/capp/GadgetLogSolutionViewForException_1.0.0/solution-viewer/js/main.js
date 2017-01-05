@@ -32,6 +32,7 @@ var addbtn = "#addbtn";
 var iteratorCount = 0;
 var dataTable;
 var solutionIds;
+var exceptionPattern;
 
 function initialize() {
     $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Please click on an error category from the above" +
@@ -67,9 +68,9 @@ function fetch(arrayIndex){
                     var obj = JSON.parse(d["message"]);
                     if (d["status"] === "success"){
                          receivedData.push([obj[0].values.solution_id, obj[0].values.reason, obj[0].values.rank,
-                             '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+obj[i].values.solution+'\')"> <span class="fw-stack"> ' +
+                             '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+obj[0].values.solution+'\',\''+obj[0].values.solution_id+'\',\''+obj[0].values.reason+'\',\''+obj[0].values.rank+'\')"> <span class="fw-stack"> ' +
                              '<i class="fw fw-ring fw-stack-2x"></i> <i class="fw fw-view fw-stack-1x"></i> </span> <span class="hidden-xs">View</span> </a>']);
-                        if(classNames.length - 1 > arrayIndex){
+                        if(solutionIds.length - 1 > arrayIndex){
                             fetch(++arrayIndex);
                         }else{
                              drawLogErrorFilteredTable();
@@ -102,6 +103,11 @@ function drawLogErrorFilteredTable() {
             dataTable.destroy();
         }
         dataTable = $("#tblMessages").DataTable({
+            "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+                var index = iDisplayIndexFull +1;
+                $('td:eq(0)',nRow).html(index);
+                return nRow;
+            },
             data: receivedData,
             order:[[2,"desc"]],
             columns: [
@@ -163,24 +169,43 @@ function putRecord(){
         }
     }
     else{
+        var uniqueId = guid();
         recordsInfo = {
-        tableName:"SOLUTIONS",
-        data:{
-            valueBatches :{
-                solution_id:guid(),
-                solution :$('#message').val(),
-                reason :$('#reason').val(),
-                rank:"0"
+            tableName:"SOLUTIONS",
+            data:{
+                valueBatches :{
+                    solution_id:uniqueId,
+                    solution :$('#message').val(),
+                    reason :$('#reason').val(),
+                    rank:"0"
+                }
             }
-        }
         }
         putrecordclient.insertRecordsToTable(recordsInfo,function(d){
             if(d["status"]=== "success"){
-                alert("Succesfully added data to the table");
-                if($("#solutionSave").css("display")!="none"){
-                    $("#canvasForDataTable").show().siblings("div").hide();
+                recordsInfo = {
+                    tableName:"EXCEPTIONS_PATTERNS",
+                    data:{
+                        valueBatches :{
+                            solution_id:uniqueId,
+                            exception_pattern :exceptionPattern,
+                        }
+                    }
                 }
-                fetch(0);
+                putrecordclient.insertRecordsToTable(recordsInfo,function(d){
+                    if(d["status"]=== "success"){
+                        alert("Succesfully added data to the table");
+                        if($("#solutionSave").css("display")!="none"){
+                            $("#canvasForDataTable").show().siblings("div").hide();
+                        }
+                        receivedData = [];
+                        fetch(0);
+                    }
+                },function(error){
+                    console.log(error);
+                    error.message = "Internal server error while data inserting.";
+                    onError(error);
+                });
             }
         },function(error){
             console.log(error);
@@ -213,13 +238,15 @@ function subscribe(callback) {
 
 subscribe(function (topic, data, subscriber) {
     $(canvasDiv).html(gadgetUtil.getLoadingText());
-    solutionIds = data;
+    solutionIds = data["ids"];
+    exceptionPattern = data["pattern"];
     fetch(0);
 });
 
-function viewFunction(solution) {
+function viewFunction(solution,id,reason,rank) {
     publish({
-        solution: solution
+        solution: solution,
+        id: id
     });
 }
 

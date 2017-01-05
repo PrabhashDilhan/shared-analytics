@@ -53,6 +53,7 @@
                 <script src="../gadget-commons/js/moment.min.js"></script>
                 <script src="../gadget-commons/js/jquery.nanoscroller.min.js"></script>
                 <script src="../gadget-commons/js/gadget-utils.js"></script>
+                <script src="../gadget-commons/js/addnewanalytics.js"></script>
 
                 <!-- Custom JS-->
                 <script src="js/gadgetconf.js"></script>
@@ -62,6 +63,7 @@
             <body class="nano">
                 <div class="nano-content">
                      <div id="canvas"/>
+                     <input type="button" value="Rate this solution" id="rateSolution">
                 </div>
             </body>
         </html>

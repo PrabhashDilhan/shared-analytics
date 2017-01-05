@@ -20,6 +20,11 @@ var canvasDiv = "#canvas";
 var prefs = new gadgets.Prefs();
 var svrUrl = gadgetUtil.getGadgetSvrUrl(prefs.getString(PARAM_TYPE));
 var client = new AnalyticsClient().init(null,null,svrUrl);
+var putrecordclient = new AnalyticsClientToPutRecords().init(null,null,"https://localhost:9443/admin/modules/la/put-record.jag");
+var solution_id;
+var reason;
+var rank;
+var solution;
 
 function initialize() {
     $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Please click on a View button from the above table" +
@@ -47,7 +52,31 @@ function drawLogViewer(solu) {
     nanoScrollerSelector[0].nanoscroller.reset();
    document.getElementById(selectedDiv).scrollIntoView();
 }
-
+function rankSolution(){
+    recordsInfo = {
+        tableName:"SOLUTIONS",
+        data:{
+            valueBatches :{
+                solution_id:solution_id,
+                solution :solution,
+                reason :reason,
+                rank:rank +1
+            }
+        }
+    }
+    putrecordclient.insertRecordsToTable(recordsInfo,function(d){
+        if(d["status"]=== "success"){
+            alert("successfully Ranked The Solution");
+            if($("#solutionSave").css("display")!="none"){
+                $("#canvasForDataTable").show().siblings("div").hide();
+            }
+        }
+    },function(error){
+        console.log(error);
+        error.message = "Internal server error while data inserting.";
+        onError(error);
+    });
+}
 
 function subscribe(callback) {
     gadgets.HubSettings.onConnect = function () {
@@ -60,7 +89,10 @@ function subscribe(callback) {
 subscribe(function (topic, data, subscriber) {
     $(canvasDiv).html(gadgetUtil.getLoadingText());
     console.log(data);
-    var solution = data["solution"];
+    solution = data["solution"];
+    solution_id = data["id"];
+    reason = data["reason"];
+    rank = data["rank"];
     fetch(solution);
 });
 
