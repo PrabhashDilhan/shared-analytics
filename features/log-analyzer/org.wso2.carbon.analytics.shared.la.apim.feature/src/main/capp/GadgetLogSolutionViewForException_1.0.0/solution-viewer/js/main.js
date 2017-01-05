@@ -31,8 +31,7 @@ var addsolutionDiv = "#addsolution";
 var addbtn = "#addbtn";
 var iteratorCount = 0;
 var dataTable;
-var graph_idd;
-var filteredTime;
+var solutionIds;
 
 function initialize() {
     $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Please click on an error category from the above" +
@@ -43,97 +42,57 @@ function initialize() {
 $(document).ready(function () {
     initialize();
 });
-function fetch() {
-    var queryInfo;
-    var queryForSearchCount = {
-        tableName: "GRAPH_TREE",
-        searchParams: {
-            query: "timestamps: "+ filteredTime + "",
-        }
-    };
+function fetch(arrayIndex){
+    if(typeof solutionIds[0] != 'undefined'){
+        var queryInfo;
+        var queryForSearchCount = {
+            tableName: "SOLUTIONS",
+            searchParams: {
+                query: "solution_id: "+ solutionIds[arrayIndex] + "",
+            }
+        };
 
-    client.searchCount(queryForSearchCount, function (d) {
-        if (d["status"] === "success" && d["message"] > 0) {
-            var totalRecordCount = d["message"];
-            queryInfo = {
-                tableName: "GRAPH_TREE",
-                searchParams: {
-                    query: "timestamps: "+ filteredTime + "",
-                    start: 0, //starting index of the matching record set
-                    count: totalRecordCount //page size for pagination
-                }
-            };
-            client.search(queryInfo, function (d) {
-                var obj = JSON.parse(d["message"]);
-                if (d["status"] === "success") {
-                        graph_idd  = obj[0].values.graph_id;
-                        var queryForSearch = {
-                            tableName: "EXAMPLE",
-                            searchParams: {
-                                query: "graph_id: "+ graph_idd + "",
-                            }
-                        };
-                         client.searchCount(queryForSearch, function (d) {
-                             var obj = JSON.parse(d["message"]);
-                             if (d["status"] === "success" && d["message"] > 0) {
-                                var totalRecordCount =d["message"];
-                                queryInfo = {
-                                    tableName: "EXAMPLE",
-                                            searchParams: {
-                                                query: "graph_id: " + graph_idd + "",
-                                                start:0,
-                                                count:totalRecordCount
-                                            }
-                                };
-                                 client.search(queryInfo,function(d){
-                                    if(d["status"]=== "success"){
-                                         iteratorCount++;
-                                         var obj = JSON.parse(d["message"]);
-                                         for (var i = 0; i < obj.length; i++) {
-                                             receivedData.push([obj[i].values.graph_id, obj[i].values.reason, obj[i].values.rank,
-                                                 '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+obj[i].values.solution+'\')"> <span class="fw-stack"> ' +
-                                                 '<i class="fw fw-ring fw-stack-2x"></i> <i class="fw fw-view fw-stack-1x"></i> </span> <span class="hidden-xs">View</span> </a>']);
-                                         }
-                                         drawLogErrorFilteredTable();
-
-                                    }
-                                 },function(error){
-                                     console.log(error);
-                                     error.message = "Internal server error while data indexing.";
-                                     onError(error);
-                                 });
-                             }else{
-                                   $(canvasDiv).html(gadgetUtil.getCustemTextAndButton("There are no solutions to display",
-                                    "If you want to add a new solutions please click add new solution button"));
-                                    var $input = $('#addbtn');
-                                   $input.appendTo('#toaddbtn');
-                             }
-                         }, function (error) {
-                             console.log(error);
-                             error.message = "Internal server error while data indexing.";
-                             onError(error);
-                         });
-
-
+        client.searchCount(queryForSearchCount, function (d) {
+            if (d["status"] === "success" && d["message"] > 0) {
+                var totalRecordCount = d["message"];
+                queryInfo = {
+                    tableName: "SOLUTIONS",
+                    searchParams: {
+                        query: "solution_id: "+ solutionIds[arrayIndex] + "",
+                        start: 0, //starting index of the matching record set
+                        count: totalRecordCount //page size for pagination
                     }
-
-
-            }, function (error) {
-                console.log(error);
-                error.message = "Internal server error while data indexing.";
-                onError(error);
-            });
-        }else{
-            $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","there are no error patterns which include this error" +
-            " please try another one"));
-
-        }
-    }, function (error) {
-        console.log(error);
-        error.message = "Internal server error while data indexing.";
-        onError(error);
-    });
-
+                };
+                client.search(queryInfo, function (d) {
+                    var obj = JSON.parse(d["message"]);
+                    if (d["status"] === "success"){
+                         receivedData.push([obj[0].values.solution_id, obj[0].values.reason, obj[0].values.rank,
+                             '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+obj[i].values.solution+'\')"> <span class="fw-stack"> ' +
+                             '<i class="fw fw-ring fw-stack-2x"></i> <i class="fw fw-view fw-stack-1x"></i> </span> <span class="hidden-xs">View</span> </a>']);
+                        if(classNames.length - 1 > arrayIndex){
+                            fetch(++arrayIndex);
+                        }else{
+                             drawLogErrorFilteredTable();
+                        }
+                    }
+                }, function (error) {
+                    console.log(error);
+                    error.message = "Internal server error while data indexing.";
+                    onError(error);
+                });
+            }
+        }, function (error) {
+            console.log(error);
+            error.message = "Internal server error while data indexing.";
+            onError(error);
+        });
+    }else{
+       $(canvasDiv).html(gadgetUtil.getCustemTextAndButton("There are no solutions to display",
+        "If you want to add a new solutions please click add new solution button"));
+       $('#toaddbtn').click(function(){
+            hidediv('canvasForDataTable','solutionSave');
+       });
+    }
 }
 
 function drawLogErrorFilteredTable() {
@@ -173,8 +132,9 @@ function drawLogErrorFilteredTable() {
 }
 
 function hidediv(table, sol){
-            $("#message").empty();
-            $("#reason").empty();
+            console.log("fgfdsgfdsgfd");
+    $("#message").empty();
+    $("#reason").empty();
     if(table==="canvasForDataTable" && sol==="solutionSave"){
         if($("#canvasForDataTable").css("display")!="none"){
             $("#solutionSave").show().siblings("div").hide();
@@ -204,9 +164,10 @@ function putRecord(){
     }
     else{
         recordsInfo = {
+        tableName:"SOLUTIONS",
         data:{
             valueBatches :{
-                graph_id :graph_idd,
+                solution_id:guid(),
                 solution :$('#message').val(),
                 reason :$('#reason').val(),
                 rank:"0"
@@ -219,7 +180,7 @@ function putRecord(){
                 if($("#solutionSave").css("display")!="none"){
                     $("#canvasForDataTable").show().siblings("div").hide();
                 }
-                fetch();
+                fetch(0);
             }
         },function(error){
             console.log(error);
@@ -227,6 +188,15 @@ function putRecord(){
             onError(error);
         });
     }
+}
+function guid() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
 }
 
 function publish(data) {
@@ -243,10 +213,8 @@ function subscribe(callback) {
 
 subscribe(function (topic, data, subscriber) {
     $(canvasDiv).html(gadgetUtil.getLoadingText());
-    filteredTime = parseInt(data["timestamp"]);
-    filteredMessage = data["message"];
-    isArtifact = data["type"];
-    fetch();
+    solutionIds = data;
+    fetch(0);
 });
 
 function viewFunction(solution) {

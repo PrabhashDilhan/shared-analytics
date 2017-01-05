@@ -14,7 +14,7 @@
   },
   "listen": {
     "subscriber": {
-      "type": "filter-range",
+      "type": "filtered-classes",
       "description": "Used to listen to any filters"
     }
   }

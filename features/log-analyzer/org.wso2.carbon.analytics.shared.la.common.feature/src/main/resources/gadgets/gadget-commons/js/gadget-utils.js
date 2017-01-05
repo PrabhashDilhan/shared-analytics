@@ -50,20 +50,10 @@ function GadgetUtil() {
         return gadgetConf;
     };
 
-    this.getTable = function(tableType) {
-        var gadgetConf = null;
-        tables.forEach(function(item, i) {
-            if (item.name === tableType) {
-                gadgetConf = item;
-            }
-        });
-        return gadgetConf;
-    };
-
-      this.getGadgetSvrUrl = function(gadgetType) {
+      this.getGadgetSvrUrl = function(chartType) {
             var svrUrl = null;
             serverUrls.forEach(function(item, i) {
-                if (item.name === gadgetType || item.name  === gadgetType.slice(0, gadgetType.indexOf("_"))) {
+                if (item.name === chartType) {
                     svrUrl = item;
                 }
             });
@@ -107,7 +97,15 @@ function GadgetUtil() {
             '</div>'+
             '</div>';
     };
-
+    this.getCustemTextAndButton = function(title, message){
+        return '<div class="status-message">'+
+            '<div class="message message-info">'+
+            '<h4><i class="icon fw fw-info"></i>'+title+'</h4>'+
+            '<p>'+message+'</p>'+
+            '<input type="button" id="toaddbtn" value="Add New Solution">'
+            '</div>'+
+            '</div>';
+    }
     this.getEmptyRecordsText = function() {
         return '<div class="status-message">'+
                 '<div class="message message-info">'+
@@ -131,15 +129,6 @@ function GadgetUtil() {
             '<div class="message message-info">' +
             '<h4><i class="icon fw fw-info"></i>Loading...</h4>' +
             '<p>Please wait while data is loading.</p>' +
-            '</div>' +
-            '</div>';
-    };
-
-    this.getDontSupportCustomErrorCodesText = function() {
-        return '<div class="status-message">' +
-            '<div class="message message-info">' +
-            '<h4><i class="icon fw fw-info"></i>Drill down not supported</h4>' +
-            '<p>Drill down not supported by default for custom error codes</p>' +
             '</div>' +
             '</div>';
     };

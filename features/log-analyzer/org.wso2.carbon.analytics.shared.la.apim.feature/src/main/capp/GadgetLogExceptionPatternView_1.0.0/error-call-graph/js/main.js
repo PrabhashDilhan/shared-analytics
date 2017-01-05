@@ -30,7 +30,7 @@ var isArtifact = false;
 var pubdata = [];
 var classNames = [];
 var messages = [];
-var strPattern;
+var strPattern = "";
 var classNamesIds = [];
 var messageIds = [];
 
@@ -43,7 +43,19 @@ function initialize() {
 $(document).ready(function () {
     initialize();
 });
+classNames = ["org.wso2.andes.configuration.qpid.ServerConfiguration",
+"org.apache.synapse.transport.http.access.AccessConfiguration",
+"org.wso2.carbon.apimgt.impl.UserAwareAPIProvider",
+"JAGGERY.site.blocks.item-add.ajax.remove:jag",
+"org.wso2.andes.kernel.AndesRecoveryTask",
+"org.wso2.carbon.apimgt.jms.listener.utils.JMSUtils"];
 
+message = ["Error loading properties from file: access-log.properties",
+"Cannot remove the API as active subscriptions exist.",
+"MQTT Transport is disabled as per configuration.",
+"Cannot locate destination : throttleData",
+"Not Retrieving Pending Tasks. Check BPS Connectivity",
+"Recovering node. Adding queue [DeadLetterChannel] OW=admin/X=false/Dtrue/LPT0"];
 function fetch() {
     receivedData.length = 0;
     var queryInfo;
@@ -68,12 +80,12 @@ function fetch() {
             client.search(queryInfo, function (d) {
                 var obj = JSON.parse(d["message"]);
                 if (d["status"] === "success" ) {
-                    for (var i = 0; i < obj.length; i++) {
-                        if(obj[i].values._level === "ERROR" || obj[i].values._level === "WARN"){
+                    for (var i = 0; i < classNames.length/*obj.length* testing*/; i++) {
+                        //if(obj[i].values._level === "ERROR" || obj[i].values._level === "WARN"){
                             receivedData.push([{
                                 level: obj[i].values._level,
-                                class: obj[i].values._class,
-                                content: obj[i].values._content,
+                                class: classNames[i],//obj[i].values._class,
+                                content: message[i],//obj[i].values._content,
                                 timestamp: parseInt(obj[i].values._eventTimeStamp)
                             }]);
                             //classNames.push(obj[i].values._class);
@@ -81,27 +93,13 @@ function fetch() {
                             //just for testing-------
 
                             //---------------
-                        }
+                        //}
                     }
                     //just for testing-------
                     //classNames = classNames.unique();
                     //message = message.unique();
                     //---------------
-                    classNames = ["org.wso2.carbon.databridge.agent.endpoint.DataEndpointGroup",
-                    "log-analyzer-proxy.jag",
-                    "org.wso2.carbon.apimgt.impl.UserAwareAPIProvider",
-                    "JAGGERY.site.blocks.item-add.ajax.remove:jag",
-                    "org.wso2.carbon.databridge.agent.endpoint.DataEndpointConnectionWorker",
-                    "org.wso2.andes.configuration.qpid.ServerConfiguration"];
-
-                    message = ["Connection refused",
-                    "Unable to send events to the endpoint.",
-                    "Exception occurred while accessing sevices",
-                    "Error loading properties from file: access-log.properties",
-                    "No receiver is reachable at reconnection, will try to reconnect every 30 sec",
-                    "Cannot remove the API as active subscriptions exist."];
                     fetchClassIds(0);
-                    fetchMessageIds(0);
                 }
             }, function (error) {
                 console.log(error);
@@ -141,10 +139,10 @@ function fetchClassIds(arrayIndex){
                         id: obj[0].values.id,
                         class_name: obj[0].values.class_name
                     }]);
-                    if(classNames.length > arrayIndex){
+                    if(classNames.length - 1 > arrayIndex){
                         fetchClassIds(++arrayIndex);
                     }else{
-                        console.log("done");
+                        fetchMessageIds(0);
                     }
                 }
             },function(error){
@@ -158,7 +156,6 @@ function fetchClassIds(arrayIndex){
         error.message = "Internal server error while data indexing.";
         onError(error);
     });
-    console.log(classNamesIds);
 }
 function fetchMessageIds(arrayIndex){
     var str = "\""+message[arrayIndex]+"\"";
@@ -186,10 +183,10 @@ function fetchMessageIds(arrayIndex){
                         id: obj[0].values.id,
                         message: obj[0].values.message
                     }]);
-                    if(classNames.length > arrayIndex){
+                    if(message.length - 1 > arrayIndex){
                         fetchMessageIds(++arrayIndex);
                     }else{
-                        console.log("done");
+                        patternCreating(classNamesIds,messageIds);
                     }
                 }
             },function(error){
@@ -203,9 +200,74 @@ function fetchMessageIds(arrayIndex){
         error.message = "Internal server error while data indexing.";
         onError(error);
     });
-    console.log(messageIds);
 }
 
+function patternCreating(classNameArray , messageArray){
+    for(var i = 0; i<receivedData.length; i++){
+        for(var j = 0; j<classNameArray.length; j++){
+            if(receivedData[i][0].class === classNameArray[j][0].class_name){
+                strPattern = strPattern.concat(classNameArray[j][0].id) + ":";
+                break;
+            }
+        }
+        for(var k = 0; k<messageArray.length; k++){
+            if(receivedData[i][0].content === messageArray[k][0].message){
+                if(i === receivedData.length - 1){
+                    strPattern = strPattern.concat(messageArray[k][0].id);
+                }else{
+                    strPattern = strPattern.concat(messageArray[k][0].id) + "-";
+                    break;
+                }
+            }
+        }
+    }
+    patternMatching(strPattern);
+}
+
+function patternMatching(exceptionPattern){
+    var queryForSearchCount = {
+        tableName: "EXCEPTION_PATTERNS",
+        searchParams: {
+            query: "exception_pattern:\""+exceptionPattern+"\""
+        }
+    };
+    client.searchCount(queryForSearchCount,function(d){
+        if (d["status"] === "success" && d["message"]>0){
+            console.log(d);
+            var totalRecordCount = d["message"];
+            queryInfo = {
+                tableName: "EXCEPTION_PATTERNS",
+                searchParams: {
+                    query: "exception_pattern:\""+exceptionPattern+"\"",
+                    start: 0, //starting index of the matching record set
+                    count: totalRecordCount //page size for pagination
+                }
+            };
+            client.search(queryInfo,function(d){
+                if (d["status"] === "success") {
+                    var obj = JSON.parse(d["message"]);
+                    var solutionIds = [];
+                    for (var i = 0; i < obj.length; i++) {
+                        solutionIds.push(obj[i].values.id);
+                    }
+                    drawErrorCallGraph();
+                    publish(solutionIds);
+                }
+            },function(error){
+                console.log(error);
+                error.message = "Internal server error while data indexing.";
+                onError(error);
+            });
+        }
+        else{
+            console.log("not found exact match.try to use graphx to sub pattern matching");
+        }
+    },function(error){
+        console.log(error);
+        error.message = "Internal server error while data indexing.";
+        onError(error);
+    });
+}
 
 Array.prototype.contains = function(v) {
     for(var i = 0; i < this.length; i++) {
