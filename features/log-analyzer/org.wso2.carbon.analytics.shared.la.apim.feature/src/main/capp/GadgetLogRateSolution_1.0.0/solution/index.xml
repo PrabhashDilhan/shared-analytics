@@ -63,7 +63,9 @@
             <body class="nano">
                 <div class="nano-content">
                      <div id="canvas"/>
-                     <input type="button" value="Rate this solution" id="rateSolution">
+                </div>
+                <div>
+                <input type="button" value="Rate this solution" id="rateSolution" onclick="rankSolution()">
                 </div>
             </body>
         </html>

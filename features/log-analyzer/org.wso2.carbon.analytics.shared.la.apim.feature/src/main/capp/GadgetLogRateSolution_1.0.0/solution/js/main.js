@@ -92,7 +92,7 @@ subscribe(function (topic, data, subscriber) {
     solution = data["solution"];
     solution_id = data["id"];
     reason = data["reason"];
-    rank = data["rank"];
+    rank = parseInt(data["rank"]);
     fetch(solution);
 });
 

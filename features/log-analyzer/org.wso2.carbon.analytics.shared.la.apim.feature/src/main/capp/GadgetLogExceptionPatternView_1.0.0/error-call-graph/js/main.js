@@ -29,7 +29,7 @@ var client = new AnalyticsClient().init(null,null,svrUrl);
 var isArtifact = false;
 var pubdata = [];
 var classNames = [];
-var messages = [];
+var message = [];
 var strPattern = "";
 var classNamesIds = [];
 var messageIds = [];
@@ -43,19 +43,6 @@ function initialize() {
 $(document).ready(function () {
     initialize();
 });
-classNames = ["org.wso2.andes.configuration.qpid.ServerConfiguration",
-"org.apache.synapse.transport.http.access.AccessConfiguration",
-"org.wso2.carbon.apimgt.impl.UserAwareAPIProvider",
-"JAGGERY.site.blocks.item-add.ajax.remove:jag",
-"org.wso2.andes.kernel.AndesRecoveryTask",
-"org.wso2.carbon.apimgt.jms.listener.utils.JMSUtils"];
-
-message = ["Error loading properties from file: access-log.properties",
-"Cannot remove the API as active subscriptions exist.",
-"MQTT Transport is disabled as per configuration.",
-"Cannot locate destination : throttleData",
-"Not Retrieving Pending Tasks. Check BPS Connectivity",
-"Recovering node. Adding queue [DeadLetterChannel] OW=admin/X=false/Dtrue/LPT0"];
 function fetch() {
     receivedData.length = 0;
     var queryInfo;
@@ -80,25 +67,20 @@ function fetch() {
             client.search(queryInfo, function (d) {
                 var obj = JSON.parse(d["message"]);
                 if (d["status"] === "success" ) {
-                    for (var i = 0; i < classNames.length/*obj.length* testing*/; i++) {
-                        //if(obj[i].values._level === "ERROR" || obj[i].values._level === "WARN"){
+                    for (var i = 0; i < obj.length; i++) {
+                        if(obj[i].values._level === "ERROR" || obj[i].values._level === "WARN"){
                             receivedData.push([{
                                 level: obj[i].values._level,
-                                class: classNames[i],//obj[i].values._class,
-                                content: message[i],//obj[i].values._content,
+                                class: obj[i].values._class,
+                                content: obj[i].values._content,
                                 timestamp: parseInt(obj[i].values._eventTimeStamp)
                             }]);
-                            //classNames.push(obj[i].values._class);
-                            //message.push(obj[i].values._content);
-                            //just for testing-------
-
-                            //---------------
-                        //}
+                            classNames.push(obj[i].values._class);
+                            message.push(obj[i].values._content);
+                        }
                     }
-                    //just for testing-------
-                    //classNames = classNames.unique();
-                    //message = message.unique();
-                    //---------------
+                    classNames = classNames.unique();
+                    message = message.unique();
                     fetchClassIds(0);
                 }
             }, function (error) {
@@ -226,17 +208,16 @@ function patternCreating(classNameArray , messageArray){
 
 function patternMatching(exceptionPattern){
     var queryForSearchCount = {
-        tableName: "EXCEPTION_PATTERNS",
+        tableName: "EXCEPTIONS_PATTERNS",
         searchParams: {
             query: "exception_pattern:\""+exceptionPattern+"\""
         }
     };
     client.searchCount(queryForSearchCount,function(d){
         if (d["status"] === "success" && d["message"]>0){
-            console.log(d);
             var totalRecordCount = d["message"];
             queryInfo = {
-                tableName: "EXCEPTION_PATTERNS",
+                tableName: "EXCEPTIONS_PATTERNS",
                 searchParams: {
                     query: "exception_pattern:\""+exceptionPattern+"\"",
                     start: 0, //starting index of the matching record set
@@ -248,10 +229,14 @@ function patternMatching(exceptionPattern){
                     var obj = JSON.parse(d["message"]);
                     var solutionIds = [];
                     for (var i = 0; i < obj.length; i++) {
-                        solutionIds.push(obj[i].values.id);
+                        solutionIds.push(obj[i].values.solution_id);
                     }
                     drawErrorCallGraph();
-                    publish(solutionIds);
+                    var publishData = {
+                        pattern :exceptionPattern,
+                        ids:solutionIds
+                    }
+                    publish(publishData);
                 }
             },function(error){
                 console.log(error);
@@ -261,6 +246,7 @@ function patternMatching(exceptionPattern){
         }
         else{
             console.log("not found exact match.try to use graphx to sub pattern matching");
+            $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Can't Find exact match ,try to use graphx "));
         }
     },function(error){
         console.log(error);

@@ -95,6 +95,45 @@ function fetch(arrayIndex){
        });
     }
 }
+function refreshTable(){
+    var queryInfo;
+    var queryForSearchCount = {
+        tableName: "EXCEPTIONS_PATTERNS",
+        searchParams: {
+            query: "exception_pattern:\""+exceptionPattern+"\""
+        }
+    };
+
+    client.searchCount(queryForSearchCount, function (d) {
+        if (d["status"] === "success" && d["message"] > 0) {
+            var totalRecordCount = d["message"];
+            queryInfo = {
+                tableName: "EXCEPTIONS_PATTERNS",
+                searchParams: {
+                    query: "exception_pattern:\""+exceptionPattern+"\"",
+                    start: 0, //starting index of the matching record set
+                    count: totalRecordCount //page size for pagination
+                }
+            };
+            client.search(queryInfo,function(d){
+                var obj = JSON.parse(d["message"]);
+                if (d["status"] === "success"){
+                    var arr1 = [];
+                    for (var i = 0; i < obj.length; i++) {
+                        arr1.push(obj[i].values.solution_id);
+                    }
+                    solutionIds = arr1;
+                    receivedData = [];
+                    fetch(0);
+                }
+            },function(error){
+
+            });
+        }
+    },function(error){
+
+    });
+}
 
 function drawLogErrorFilteredTable() {
     try {
@@ -138,7 +177,6 @@ function drawLogErrorFilteredTable() {
 }
 
 function hidediv(table, sol){
-            console.log("fgfdsgfdsgfd");
     $("#message").empty();
     $("#reason").empty();
     if(table==="canvasForDataTable" && sol==="solutionSave"){
@@ -199,7 +237,8 @@ function putRecord(){
                             $("#canvasForDataTable").show().siblings("div").hide();
                         }
                         receivedData = [];
-                        fetch(0);
+                        //fetch(0);
+                        refreshTable();
                     }
                 },function(error){
                     console.log(error);
@@ -240,13 +279,16 @@ subscribe(function (topic, data, subscriber) {
     $(canvasDiv).html(gadgetUtil.getLoadingText());
     solutionIds = data["ids"];
     exceptionPattern = data["pattern"];
+    console.log(exceptionPattern);
     fetch(0);
 });
 
 function viewFunction(solution,id,reason,rank) {
     publish({
         solution: solution,
-        id: id
+        id: id,
+        reason:reason,
+        rank:rank
     });
 }
 
