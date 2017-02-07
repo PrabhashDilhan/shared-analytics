@@ -1,20 +1,20 @@
 {
-  "id": "Solution_viewer",
-  "title": "Solution Viewer",
+  "id": "minedSolutions",
+  "title": "Mined Solutions",
   "type": "gadget",
-  "thumbnail": "store://gadget/solution-viewer/index.png",
+  "thumbnail": "store://gadget/minedSolutions/index.png",
   "data": {
-    "url": "store://gadget/solution-viewer/index.xml"
+    "url": "store://gadget/minedSolutions/index.xml"
   },
   "notify": {
     "publisher": {
-      "type": "solution",
+      "type": "solutionIds",
       "description": "This notifies selected solution"
     }
   },
   "listen": {
     "subscriber": {
-      "type": "solutionIds",
+      "type": "filtered-classes",
       "description": "Used to listen to any filters"
     }
   }

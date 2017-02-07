@@ -95,6 +95,44 @@ function fetch(arrayIndex){
        });
     }
 }
+function fetchids(){
+    var queryForSearchCount = {
+        tableName: "EXCEPTIONS_PATTERN",
+        searchParams: {
+            query: "exception_pattern:\""+exceptionPattern+"\""
+        }
+    };
+    client.searchCount(queryForSearchCount,function(d){
+        if (d["status"] === "success" && d["message"]>0){
+            var totalRecordCount = d["message"];
+            queryInfo = {
+                tableName: "EXCEPTIONS_PATTERN",
+                searchParams: {
+                    query: "exception_pattern:\""+exceptionPattern+"\"",
+                    start: 0, //starting index of the matching record set
+                    count: totalRecordCount //page size for pagination
+                }
+            };
+                client.search(queryInfo, function (d) {
+                    var obj = JSON.parse(d["message"]);
+                    if (d["status"] === "success"){
+                        for(var i=0; i < obj.length; i++){
+                            solutionIds.push(obj[i].values.solution_id);
+                        }
+                        fetch(0);
+                    }
+                }, function (error) {
+                    console.log(error);
+                    error.message = "Internal server error while data indexing.";
+                    onError(error);
+                });
+            }
+        }, function (error) {
+            console.log(error);
+            error.message = "Internal server error while data indexing.";
+            onError(error);
+        });
+}
 function refreshTable(){
     var queryInfo;
     var queryForSearchCount = {
@@ -276,11 +314,11 @@ function subscribe(callback) {
 }
 
 subscribe(function (topic, data, subscriber) {
+    console("dddddddddddddddddddddddddddddddddddddddddddd");
     $(canvasDiv).html(gadgetUtil.getLoadingText());
-    solutionIds = data["ids"];
     exceptionPattern = data["pattern"];
     console.log(exceptionPattern);
-    fetch(0);
+    //fetchids();
 });
 
 function viewFunction(solution,id,reason,rank) {

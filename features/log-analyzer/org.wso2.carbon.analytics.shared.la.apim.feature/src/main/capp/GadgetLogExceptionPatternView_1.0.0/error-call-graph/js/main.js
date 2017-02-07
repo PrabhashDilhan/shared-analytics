@@ -26,6 +26,7 @@ var canvasDiv = "#canvas";
 var prefs = new gadgets.Prefs();
 var svrUrl = gadgetUtil.getGadgetSvrUrl(prefs.getString(PARAM_TYPE));
 var client = new AnalyticsClient().init(null,null,svrUrl);
+var putrecordclient = new AnalyticsClientToPutRecords().init(null,null,"https://localhost:9443/admin/modules/la/put-record.jag");
 var isArtifact = false;
 var pubdata = [];
 var classNames = [];
@@ -79,6 +80,7 @@ function fetch() {
                             message.push(obj[i].values._content);
                         }
                     }
+                    drawErrorCallGraph();
                     classNames = classNames.unique();
                     message = message.unique();
                     fetchClassIds(0);
@@ -140,6 +142,7 @@ function fetchClassIds(arrayIndex){
     });
 }
 function fetchMessageIds(arrayIndex){
+    console.log(arrayIndex);
     var str = "\""+message[arrayIndex]+"\"";
     var queryForSearchCount = {
         tableName: "EXCEPTION_MESSAGE_TABLE",
@@ -168,7 +171,9 @@ function fetchMessageIds(arrayIndex){
                     if(message.length - 1 > arrayIndex){
                         fetchMessageIds(++arrayIndex);
                     }else{
+                    console.log("5");
                         patternCreating(classNamesIds,messageIds);
+                        console.log("6");
                     }
                 }
             },function(error){
@@ -204,11 +209,12 @@ function patternCreating(classNameArray , messageArray){
         }
     }
     patternMatching(strPattern);
+   // patternMiningOnGraphx(strPattern);
 }
 
 function patternMatching(exceptionPattern){
     var queryForSearchCount = {
-        tableName: "EXCEPTIONS_PATTERNS",
+        tableName: "EXCEPTIONS_PATTERN",
         searchParams: {
             query: "exception_pattern:\""+exceptionPattern+"\""
         }
@@ -217,7 +223,7 @@ function patternMatching(exceptionPattern){
         if (d["status"] === "success" && d["message"]>0){
             var totalRecordCount = d["message"];
             queryInfo = {
-                tableName: "EXCEPTIONS_PATTERNS",
+                tableName: "EXCEPTIONS_PATTERN",
                 searchParams: {
                     query: "exception_pattern:\""+exceptionPattern+"\"",
                     start: 0, //starting index of the matching record set
@@ -231,12 +237,7 @@ function patternMatching(exceptionPattern){
                     for (var i = 0; i < obj.length; i++) {
                         solutionIds.push(obj[i].values.solution_id);
                     }
-                    drawErrorCallGraph();
-                    var publishData = {
-                        pattern :exceptionPattern,
-                        ids:solutionIds
-                    }
-                    publish(publishData);
+                    //drawErrorCallGraph();
                 }
             },function(error){
                 console.log(error);
@@ -245,8 +246,35 @@ function patternMatching(exceptionPattern){
             });
         }
         else{
-            console.log("not found exact match.try to use graphx to sub pattern matching");
-            $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Can't Find exact match ,try to use graphx "));
+            patternMiningOnGraphx(exceptionPattern);
+        }
+    },function(error){
+        console.log(error);
+        error.message = "Internal server error while data indexing.";
+        onError(error);
+    });
+}
+
+function patternMiningOnGraphx(exceptionPattern){
+    var queryForSearchCount = {
+        data:"\""+exceptionPattern+"\""
+    };
+    console.log(exceptionPattern);
+    putrecordclient.graphxPatternMine(queryForSearchCount,function(d){
+        var obj = JSON.parse(d["message"]);
+        if (d["status"] === "success" && JSON.parse(obj.message.ending_vertex_idsJson).length>0){
+            var publishData = {
+                minedpattern :JSON.parse(obj.message.minedPatternsJson),
+                solutions:JSON.parse(obj.message.minedSolutions)
+            }
+            publish(publishData);
+        }
+        else{
+            var publishData = {
+                minedpattern :null,
+                solutions:null
+            }
+            publish(publishData);
         }
     },function(error){
         console.log(error);
