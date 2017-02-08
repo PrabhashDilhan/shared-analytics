@@ -72,7 +72,7 @@
                     <div id="canvasForDataTable" class="add-padding-5x">
                     <table id="tblMessages" class="table" cellspacing="0" width="100%">
                     </table>
-                    <input type="button" value="Add New Solution" id="addbtn" onclick="hidediv('canvasForDataTable','solutionSave')">
+                    <input type="button" value="Add New Solution For Above Pattern" id="addbtn" onclick="hidediv('canvasForDataTable','solutionSave')">
                     </div>
                     <div id="solutionSave">
                     <div class="form-style-2">

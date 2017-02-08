@@ -34,6 +34,9 @@ var solutionIds;
 var exceptionPattern;
 var minedpatternarranged = [];
 var solutionsarranged = [];
+var confidence = [];
+var lengthofgeneratedpattern;
+var generatedEntirePattern;
 
 function initialize() {
     $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Please click on an error category from the above" +
@@ -68,9 +71,9 @@ function fetch(arrayIndex){
                     var obj = JSON.parse(d["message"]);
                     if (d["status"] === "success"){
                         console.log(obj);
-                        pattern = obj[0].values.exception_pattern;
-                         receivedData.push([minedsolutionId, pattern,
-                             '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+pattern+'\')"> <span class="fw-stack"> ' +
+                        pattern = minedpatternarranged[arrayIndex];
+                         receivedData.push([minedsolutionId, confidence[arrayIndex]+"%",
+                             '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+pattern+'\',\''+generatedEntirePattern+'\')"> <span class="fw-stack"> ' +
                              '<i class="fw fw-ring fw-stack-2x"></i> <i class="fw fw-view fw-stack-1x"></i> </span> <span class="hidden-xs">View</span> </a>']);
                         if(minedpatternarranged.length - 1 > arrayIndex){
                             fetch(++arrayIndex);
@@ -107,7 +110,7 @@ function drawLogErrorFilteredTable() {
             order:[[2,"desc"]],
             columns: [
                 { title: "No" },
-                { title: "Rating" },
+                { title: "Confidence" },
                 { title: "View-Solution" }
             ],
             dom: '<"dataTablesTop"' +
@@ -161,7 +164,14 @@ function reArrangeSolutions(minedpattern,solutions){
     console.log("dsffdffffffffffffffffffffffffffffffffffffffff")
     console.log(minedpatternarranged);
     console.log(solutionsarranged);
+    setConfidence();
     fetch(0);
+}
+function setConfidence(){
+    for(var i=0; i < solutionsarranged.length; i++){
+        var split = solutionsarranged[i].split(',');
+        confidence.push(Math.round((split.length/lengthofgeneratedpattern)*100));
+    }
 }
 
 function publish(data) {
@@ -180,22 +190,26 @@ subscribe(function (topic, data, subscriber) {
     $(canvasDiv).html(gadgetUtil.getLoadingText());
     var minedpatterntemp = data["minedpattern"];
     var solutionstemp = data["solutions"];
+    lengthofgeneratedpattern = data["lengthofgeneratedpattern"];
+    generatedEntirePattern = data["generatedEntirePattern"];
     console.log(minedpatterntemp);
     console.log(solutionstemp);
-    reArrangeSolutions(minedpatterntemp,solutionstemp);
-    if(minedpattern==null){
-         $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Therenare not matching " +
+    console.log(lengthofgeneratedpattern);
+
+    if(minedpatterntemp==null){
+         $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","There are not matching " +
                 "pattern for above scenario"));
     }else{
-
+        reArrangeSolutions(minedpatterntemp,solutionstemp);
     }
 });
 
-function viewFunction(patterns) {
+function viewFunction(patterns,genaratedentirePattern) {
     console.log("yyyyyyyyyyyyyyyyyyyyyyyyyyy");
     console.log(patterns);
     publish({
-        pattern:patterns
+        pattern:patterns,
+        generatedEntirePattern:genaratedentirePattern
     });
 }
 

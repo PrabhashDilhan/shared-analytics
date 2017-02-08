@@ -34,6 +34,7 @@ var message = [];
 var strPattern = "";
 var classNamesIds = [];
 var messageIds = [];
+var entirePattern;
 
 function initialize() {
     $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Please click on a View button from the above table" +
@@ -142,8 +143,9 @@ function fetchClassIds(arrayIndex){
     });
 }
 function fetchMessageIds(arrayIndex){
-    console.log(arrayIndex);
+    console.log(message);
     var str = "\""+message[arrayIndex]+"\"";
+    console.log(str);
     var queryForSearchCount = {
         tableName: "EXCEPTION_MESSAGE_TABLE",
         searchParams: {
@@ -164,6 +166,8 @@ function fetchMessageIds(arrayIndex){
             client.search(queryInfo,function(d){
                 if (d["status"] === "success") {
                     var obj = JSON.parse(d["message"]);
+                    console.log("3");
+                    console.log(obj[0].values.message);
                     messageIds.push([{
                         id: obj[0].values.id,
                         message: obj[0].values.message
@@ -171,9 +175,7 @@ function fetchMessageIds(arrayIndex){
                     if(message.length - 1 > arrayIndex){
                         fetchMessageIds(++arrayIndex);
                     }else{
-                    console.log("5");
                         patternCreating(classNamesIds,messageIds);
-                        console.log("6");
                     }
                 }
             },function(error){
@@ -208,7 +210,8 @@ function patternCreating(classNameArray , messageArray){
             }
         }
     }
-    patternMatching(strPattern);
+    entirePattern = strPattern;
+    patternMiningOnGraphx(strPattern);
    // patternMiningOnGraphx(strPattern);
 }
 
@@ -265,14 +268,18 @@ function patternMiningOnGraphx(exceptionPattern){
         if (d["status"] === "success" && JSON.parse(obj.message.ending_vertex_idsJson).length>0){
             var publishData = {
                 minedpattern :JSON.parse(obj.message.minedPatternsJson),
-                solutions:JSON.parse(obj.message.minedSolutions)
+                solutions:JSON.parse(obj.message.minedSolutions),
+                lengthofgeneratedpattern:receivedData.length,
+                generatedEntirePattern:entirePattern
             }
             publish(publishData);
         }
         else{
             var publishData = {
                 minedpattern :null,
-                solutions:null
+                solutions:null,
+                lengthofgeneratedpattern:receivedData.length,
+                generatedEntirePattern:entirePattern
             }
             publish(publishData);
         }

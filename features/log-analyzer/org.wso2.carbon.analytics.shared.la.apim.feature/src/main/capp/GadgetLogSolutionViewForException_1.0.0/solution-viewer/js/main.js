@@ -31,8 +31,9 @@ var addsolutionDiv = "#addsolution";
 var addbtn = "#addbtn";
 var iteratorCount = 0;
 var dataTable;
-var solutionIds;
+var solutionIds = [];
 var exceptionPattern;
+var generatedEntirePattern;
 
 function initialize() {
     $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","Please click on an error category from the above" +
@@ -67,7 +68,9 @@ function fetch(arrayIndex){
                 client.search(queryInfo, function (d) {
                     var obj = JSON.parse(d["message"]);
                     if (d["status"] === "success"){
-                         receivedData.push([obj[0].values.solution_id, obj[0].values.reason, obj[0].values.rank,
+                         console.log(obj);
+                         receivedData.push([obj[0].values.solution_id, obj[0].values.reason, '<p><span id="'+arrayIndex+'" class="stars"><span style="width: 20px;"></span></span></p>'+
+                            '<script>setFiveStar(\''+arrayIndex+'\',\''+obj[0].values.rank+'\');</script>',
                              '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+obj[0].values.solution+'\',\''+obj[0].values.solution_id+'\',\''+obj[0].values.reason+'\',\''+obj[0].values.rank+'\')"> <span class="fw-stack"> ' +
                              '<i class="fw fw-ring fw-stack-2x"></i> <i class="fw fw-view fw-stack-1x"></i> </span> <span class="hidden-xs">View</span> </a>']);
                         if(solutionIds.length - 1 > arrayIndex){
@@ -95,48 +98,10 @@ function fetch(arrayIndex){
        });
     }
 }
-function fetchids(){
-    var queryForSearchCount = {
-        tableName: "EXCEPTIONS_PATTERN",
-        searchParams: {
-            query: "exception_pattern:\""+exceptionPattern+"\""
-        }
-    };
-    client.searchCount(queryForSearchCount,function(d){
-        if (d["status"] === "success" && d["message"]>0){
-            var totalRecordCount = d["message"];
-            queryInfo = {
-                tableName: "EXCEPTIONS_PATTERN",
-                searchParams: {
-                    query: "exception_pattern:\""+exceptionPattern+"\"",
-                    start: 0, //starting index of the matching record set
-                    count: totalRecordCount //page size for pagination
-                }
-            };
-                client.search(queryInfo, function (d) {
-                    var obj = JSON.parse(d["message"]);
-                    if (d["status"] === "success"){
-                        for(var i=0; i < obj.length; i++){
-                            solutionIds.push(obj[i].values.solution_id);
-                        }
-                        fetch(0);
-                    }
-                }, function (error) {
-                    console.log(error);
-                    error.message = "Internal server error while data indexing.";
-                    onError(error);
-                });
-            }
-        }, function (error) {
-            console.log(error);
-            error.message = "Internal server error while data indexing.";
-            onError(error);
-        });
-}
 function refreshTable(){
     var queryInfo;
     var queryForSearchCount = {
-        tableName: "EXCEPTIONS_PATTERNS",
+        tableName: "EXCEPTIONS_PATTERN",
         searchParams: {
             query: "exception_pattern:\""+exceptionPattern+"\""
         }
@@ -146,7 +111,7 @@ function refreshTable(){
         if (d["status"] === "success" && d["message"] > 0) {
             var totalRecordCount = d["message"];
             queryInfo = {
-                tableName: "EXCEPTIONS_PATTERNS",
+                tableName: "EXCEPTIONS_PATTERN",
                 searchParams: {
                     query: "exception_pattern:\""+exceptionPattern+"\"",
                     start: 0, //starting index of the matching record set
@@ -170,6 +135,39 @@ function refreshTable(){
         }
     },function(error){
 
+    });
+}
+function setFiveStar(spanid,rank){
+    console.log(rank);
+    var id ="#"+spanid+"";
+    var val;
+    if(rank>=10){
+        val = parseFloat(5);
+    }else if(8<=rank || rank<10){
+        val = parseFloat(5);
+    }else  if(6<=rank || rank<8){
+        val = parseFloat(4);
+    }else if(4<=rank || rank<6){
+        val = parseFloat(3);
+    }else if(2<=rank || rank<4){
+        val = parseFloat(2);
+    }else if(0<=rank || rank<2){
+        val = parseFloat(1);
+    }else{
+        val = parseFloat(1);
+    }
+    $.fn.stars = function() {
+        return $(this).each(function() {
+            // Make sure that the value is in 0 - 5 range, multiply to get width
+            var size = Math.max(0, (Math.min(5, val))) * 16;
+            // Create stars holder
+            var $span = $(id).width(size);
+            // Replace the numerical value with stars
+            $(this).html($span);
+        });
+    }
+    $(function() {
+        $(id).stars();
     });
 }
 
@@ -260,11 +258,11 @@ function putRecord(){
         putrecordclient.insertRecordsToTable(recordsInfo,function(d){
             if(d["status"]=== "success"){
                 recordsInfo = {
-                    tableName:"EXCEPTIONS_PATTERNS",
+                    tableName:"EXCEPTIONS_PATTERN",
                     data:{
                         valueBatches :{
                             solution_id:uniqueId,
-                            exception_pattern :exceptionPattern,
+                            exception_pattern :generatedEntirePattern,
                         }
                     }
                 }
@@ -314,11 +312,11 @@ function subscribe(callback) {
 }
 
 subscribe(function (topic, data, subscriber) {
-    console("dddddddddddddddddddddddddddddddddddddddddddd");
     $(canvasDiv).html(gadgetUtil.getLoadingText());
     exceptionPattern = data["pattern"];
+    generatedEntirePattern = data["generatedEntirePattern"];
     console.log(exceptionPattern);
-    //fetchids();
+    refreshTable();
 });
 
 function viewFunction(solution,id,reason,rank) {
