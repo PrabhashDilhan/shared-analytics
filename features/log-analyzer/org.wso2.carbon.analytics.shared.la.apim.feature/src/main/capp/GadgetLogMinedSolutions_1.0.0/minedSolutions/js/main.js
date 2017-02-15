@@ -107,7 +107,6 @@ function drawLogErrorFilteredTable() {
                 return nRow;
             },
             data: receivedData,
-            order:[[2,"desc"]],
             columns: [
                 { title: "No" },
                 { title: "Confidence" },
@@ -164,6 +163,7 @@ function reArrangeSolutions(minedpattern,solutions){
     console.log("dsffdffffffffffffffffffffffffffffffffffffffff")
     console.log(minedpatternarranged);
     console.log(solutionsarranged);
+    minedpatternarranged.reverse();
     setConfidence();
     fetch(0);
 }
@@ -171,6 +171,7 @@ function setConfidence(){
     for(var i=0; i < solutionsarranged.length; i++){
         var split = solutionsarranged[i].split(',');
         confidence.push(Math.round((split.length/lengthofgeneratedpattern)*100));
+        confidence.reverse();
     }
 }
 
@@ -195,10 +196,15 @@ subscribe(function (topic, data, subscriber) {
     console.log(minedpatterntemp);
     console.log(solutionstemp);
     console.log(lengthofgeneratedpattern);
-
+    initialize();
     if(minedpatterntemp==null){
+    console.log("fffffffffff");
          $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","There are not matching " +
                 "pattern for above scenario"));
+        publish({
+            pattern:null,
+            generatedEntirePattern:generatedEntirePattern
+        });
     }else{
         reArrangeSolutions(minedpatterntemp,solutionstemp);
     }

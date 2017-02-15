@@ -45,6 +45,7 @@ $(document).ready(function () {
     initialize();
 });
 function fetch(arrayIndex){
+       console.log(solutionIds[arrayIndex]);
     if(typeof solutionIds[0] != 'undefined'){
         var queryInfo;
         var queryForSearchCount = {
@@ -66,13 +67,19 @@ function fetch(arrayIndex){
                     }
                 };
                 client.search(queryInfo, function (d) {
+                    //var plaintextstr = JSON.stringify(d["message"]).replace(/&/, '&amp;');
                     var obj = JSON.parse(d["message"]);
+                    console.log(obj);
                     if (d["status"] === "success"){
                          console.log(obj);
-                         receivedData.push([obj[0].values.solution_id, obj[0].values.reason, '<p><span id="'+arrayIndex+'" class="stars"><span style="width: 20px;"></span></span></p>'+
-                            '<script>setFiveStar(\''+arrayIndex+'\',\''+obj[0].values.rank+'\');</script>',
-                             '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+obj[0].values.solution+'\',\''+obj[0].values.solution_id+'\',\''+obj[0].values.reason+'\',\''+obj[0].values.rank+'\')"> <span class="fw-stack"> ' +
-                             '<i class="fw fw-ring fw-stack-2x"></i> <i class="fw fw-view fw-stack-1x"></i> </span> <span class="hidden-xs">View</span> </a>']);
+                         if(obj[0].values.isdeleted==false){
+                             receivedData.push([obj[0].values.solution_id, obj[0].values.reason, '<p><span id="'+arrayIndex+'" class="stars"><span style="width: 20px;"></span></span></p>'+
+                                '<script>setFiveStar(\''+arrayIndex+'\',\''+obj[0].values.rank+'\',\''+obj[0].values.rankedtime+'\');</script>',
+                                 '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+obj[0].values.solution.replace(/'/g,'&quot;')+'\',\''+obj[0].values.solution_id+'\',\''+obj[0].values.reason+'\',\''+obj[0].values.rank+'\',\''+obj[0].values.rankedtime+'\')"> <span class="fw-stack"> ' +
+                                 '<i class="fw fw-ring fw-stack-2x"></i> <i class="fw fw-view fw-stack-1x"></i> </span> <span class="hidden-xs">View</span> </a>',
+                                 '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "deleteFunction(\''+obj[0].values.solution.replace(/'/g,'&quot;')+'\',\''+obj[0].values.solution_id+'\',\''+obj[0].values.reason+'\',\''+obj[0].values.rank+'\',\''+obj[0].values.rankedtime+'\')"> <span class="fw-stack"> ' +
+                                 '<i class="fw fw-ring fw-stack-2x"></i> <i class="fw fw-view fw-stack-1x"></i> </span> <span class="hidden-xs">Delete</span> </a>']);
+                         }
                         if(solutionIds.length - 1 > arrayIndex){
                             fetch(++arrayIndex);
                         }else{
@@ -99,6 +106,8 @@ function fetch(arrayIndex){
     }
 }
 function refreshTable(){
+console.log("ttttttttttt");
+console.log(exceptionPattern);
     var queryInfo;
     var queryForSearchCount = {
         tableName: "EXCEPTIONS_PATTERN",
@@ -137,38 +146,38 @@ function refreshTable(){
 
     });
 }
-function setFiveStar(spanid,rank){
-    console.log(rank);
+function setFiveStar(spanid,rank,rankedtime){
     var id ="#"+spanid+"";
-    var val;
-    if(rank>=10){
-        val = parseFloat(5);
-    }else if(8<=rank || rank<10){
-        val = parseFloat(5);
-    }else  if(6<=rank || rank<8){
-        val = parseFloat(4);
-    }else if(4<=rank || rank<6){
-        val = parseFloat(3);
-    }else if(2<=rank || rank<4){
+    //id = '\''+id+'\';
+    var kk=rank/rankedtime;
+    console.log(kk);
+    if(kk==5){
+        val = parseFloat(kk);
+    }else if(4<=rank || rank<5){
+        val = parseFloat(kk);
+    }else  if(3<=rank || rank<4){
+        val = parseFloat(kk);
+    }else if(2<=rank || rank<3){
+        val = parseFloat(kk);
+    }else if(1<=rank || rank<2){
         val = parseFloat(2);
-    }else if(0<=rank || rank<2){
-        val = parseFloat(1);
     }else{
-        val = parseFloat(1);
+        val = parseFloat(0);
     }
+    console.log(val);
     $.fn.stars = function() {
         return $(this).each(function() {
             // Make sure that the value is in 0 - 5 range, multiply to get width
-            var size = Math.max(0, (Math.min(5, val))) * 16;
+            var size = Math.max(0, (Math.min(5,val))) * 16;
             // Create stars holder
-            var $span = $(id).width(size);
+            var $span = $('<span />').width(size);
             // Replace the numerical value with stars
             $(this).html($span);
         });
     }
-    $(function() {
-        $(id).stars();
-    });
+
+    $('#'.concat(spanid)).stars();
+
 }
 
 function drawLogErrorFilteredTable() {
@@ -189,7 +198,8 @@ function drawLogErrorFilteredTable() {
                 { title: "No" },
                 { title: "Reason" },
                 { title: "Rating" },
-                { title: "View-Solution" }
+                { title: "View-Solution" },
+                { title: "Delete Solution"}
             ],
             dom: '<"dataTablesTop"' +
                 'f' +
@@ -251,7 +261,9 @@ function putRecord(){
                     solution_id:uniqueId,
                     solution :$('#message').val(),
                     reason :$('#reason').val(),
-                    rank:"0"
+                    rank:"0",
+                    isdeleted:false,
+                    rankedtime:"0"
                 }
             }
         }
@@ -288,7 +300,38 @@ function putRecord(){
             onError(error);
         });
     }
-}
+};
+function deleteFunction(solution,solution_id,reason,rank,rankedtime){
+    var r = confirm("Are you sure? Do You want to delete this solution?");
+    if (r == true) {
+        recordsInfo = {
+            tableName:"SOLUTIONS",
+            data:{
+                valueBatches :{
+                    solution_id:solution_id,
+                    solution :solution,
+                    reason :reason,
+                    rank:rank,
+                    isdeleted:true,
+                    rankedtime:rankedtime
+                }
+            }
+        }
+        putrecordclient.insertRecordsToTable(recordsInfo,function(d){
+            if(d["status"]=== "success"){
+                alert("successfully Deleted The Solution");
+                refreshTable();
+            }
+        },function(error){
+            console.log(error);
+            error.message = "Internal server error while data inserting.";
+            onError(error);
+        });
+    }else{
+        refreshTable();
+    }
+};
+
 function guid() {
   function s4() {
     return Math.floor((1 + Math.random()) * 0x10000)
@@ -297,7 +340,7 @@ function guid() {
   }
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
     s4() + '-' + s4() + s4() + s4();
-}
+};
 
 function publish(data) {
     gadgets.Hub.publish("publisher", data);
@@ -316,15 +359,31 @@ subscribe(function (topic, data, subscriber) {
     exceptionPattern = data["pattern"];
     generatedEntirePattern = data["generatedEntirePattern"];
     console.log(exceptionPattern);
-    refreshTable();
+    if(exceptionPattern==null){
+        exceptionPattern = generatedEntirePattern;
+        console.log("Lllllllllllllll");
+       $(canvasDiv).html(gadgetUtil.getCustemTextAndButton("There are no solutions to display",
+        "If you want to add a new solutions please click add new solution button"));
+                    var $input = $('#addbtn');
+                   $input.appendTo('#toaddbtn');
+       $('#toaddbtn').click(function(){
+            hidediv('canvasForDataTable','solutionSave');
+       });
+    }else{
+        refreshTable();
+    }
+
 });
 
-function viewFunction(solution,id,reason,rank) {
+function viewFunction(solution,id,reason,rank,rankedtime) {
+    console.log(solution);
+    console.log(reason);
     publish({
         solution: solution,
         id: id,
         reason:reason,
-        rank:rank
+        rank:rank,
+        rankedtime:rankedtime
     });
 }
 
