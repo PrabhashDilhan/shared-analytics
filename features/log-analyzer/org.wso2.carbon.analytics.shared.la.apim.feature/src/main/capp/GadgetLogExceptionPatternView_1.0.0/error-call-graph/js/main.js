@@ -143,9 +143,7 @@ function fetchClassIds(arrayIndex){
     });
 }
 function fetchMessageIds(arrayIndex){
-    console.log(message);
     var str = "\""+message[arrayIndex]+"\"";
-    console.log(str);
     var queryForSearchCount = {
         tableName: "EXCEPTION_MESSAGE_TABLE",
         searchParams: {
@@ -166,8 +164,6 @@ function fetchMessageIds(arrayIndex){
             client.search(queryInfo,function(d){
                 if (d["status"] === "success") {
                     var obj = JSON.parse(d["message"]);
-                    console.log("3");
-                    console.log(obj[0].values.message);
                     messageIds.push([{
                         id: obj[0].values.id,
                         message: obj[0].values.message
@@ -262,7 +258,6 @@ function patternMiningOnGraphx(exceptionPattern){
     var queryForSearchCount = {
         data:"\""+exceptionPattern+"\""
     };
-    console.log(exceptionPattern);
     putrecordclient.graphxPatternMine(queryForSearchCount,function(d){
         var obj = JSON.parse(d["message"]);
         if (d["status"] === "success" && JSON.parse(obj.message.ending_vertex_idsJson).length>0){

@@ -70,7 +70,6 @@ function fetch(arrayIndex){
                     var pattern;
                     var obj = JSON.parse(d["message"]);
                     if (d["status"] === "success"){
-                        console.log(obj);
                         pattern = minedpatternarranged[arrayIndex];
                          receivedData.push([minedsolutionId, confidence[arrayIndex]+"%",
                              '<a href="#" class="btn padding-reduce-on-grid-view" onclick= "viewFunction(\''+pattern+'\',\''+generatedEntirePattern+'\')"> <span class="fw-stack"> ' +
@@ -160,9 +159,6 @@ function reArrangeSolutions(minedpattern,solutions){
     $.each(solutionsarrangedtemp, function(i, el){
         if($.inArray(el, solutionsarranged) === -1) solutionsarranged.push(el);
     });
-    console.log("dsffdffffffffffffffffffffffffffffffffffffffff")
-    console.log(minedpatternarranged);
-    console.log(solutionsarranged);
     minedpatternarranged.reverse();
     setConfidence();
     fetch(0);
@@ -193,12 +189,7 @@ subscribe(function (topic, data, subscriber) {
     var solutionstemp = data["solutions"];
     lengthofgeneratedpattern = data["lengthofgeneratedpattern"];
     generatedEntirePattern = data["generatedEntirePattern"];
-    console.log(minedpatterntemp);
-    console.log(solutionstemp);
-    console.log(lengthofgeneratedpattern);
-    initialize();
     if(minedpatterntemp==null){
-    console.log("fffffffffff");
          $(canvasDiv).html(gadgetUtil.getCustemText("No content to display","There are not matching " +
                 "pattern for above scenario"));
         publish({
@@ -211,8 +202,6 @@ subscribe(function (topic, data, subscriber) {
 });
 
 function viewFunction(patterns,genaratedentirePattern) {
-    console.log("yyyyyyyyyyyyyyyyyyyyyyyyyyy");
-    console.log(patterns);
     publish({
         pattern:patterns,
         generatedEntirePattern:genaratedentirePattern

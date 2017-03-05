@@ -45,7 +45,6 @@ $(document).ready(function () {
     initialize();
 });
 function fetch(arrayIndex){
-       console.log(solutionIds[arrayIndex]);
     if(typeof solutionIds[0] != 'undefined'){
         var queryInfo;
         var queryForSearchCount = {
@@ -69,9 +68,7 @@ function fetch(arrayIndex){
                 client.search(queryInfo, function (d) {
                     //var plaintextstr = JSON.stringify(d["message"]).replace(/&/, '&amp;');
                     var obj = JSON.parse(d["message"]);
-                    console.log(obj);
                     if (d["status"] === "success"){
-                         console.log(obj);
                          if(obj[0].values.isdeleted==false){
                              receivedData.push([obj[0].values.solution_id, obj[0].values.reason, '<p><span id="'+arrayIndex+'" class="stars"><span style="width: 20px;"></span></span></p>'+
                                 '<script>setFiveStar(\''+arrayIndex+'\',\''+obj[0].values.rank+'\',\''+obj[0].values.rankedtime+'\');</script>',
@@ -106,8 +103,6 @@ function fetch(arrayIndex){
     }
 }
 function refreshTable(){
-console.log("ttttttttttt");
-console.log(exceptionPattern);
     var queryInfo;
     var queryForSearchCount = {
         tableName: "EXCEPTIONS_PATTERN",
@@ -150,7 +145,6 @@ function setFiveStar(spanid,rank,rankedtime){
     var id ="#"+spanid+"";
     //id = '\''+id+'\';
     var kk=rank/rankedtime;
-    console.log(kk);
     if(kk==5){
         val = parseFloat(kk);
     }else if(4<=rank || rank<5){
@@ -164,7 +158,6 @@ function setFiveStar(spanid,rank,rankedtime){
     }else{
         val = parseFloat(0);
     }
-    console.log(val);
     $.fn.stars = function() {
         return $(this).each(function() {
             // Make sure that the value is in 0 - 5 range, multiply to get width
@@ -230,7 +223,8 @@ function hidediv(table, sol){
             $("#solutionSave").show().siblings("div").hide();
         }
     }else{
-        console.log($('#canvasForDataTable').is(':empty'));
+        console.log($('#canvas').is(':empty'));
+        console.log("sdfsdfsdfdf");
         if($('#canvas').is(':empty')){
            $(canvasDiv).html(gadgetUtil.getCustemTextAndButton("There are no solutions to display",
             "If you want to add a new solutions please click add new solution button"));
@@ -358,10 +352,8 @@ subscribe(function (topic, data, subscriber) {
     $(canvasDiv).html(gadgetUtil.getLoadingText());
     exceptionPattern = data["pattern"];
     generatedEntirePattern = data["generatedEntirePattern"];
-    console.log(exceptionPattern);
     if(exceptionPattern==null){
         exceptionPattern = generatedEntirePattern;
-        console.log("Lllllllllllllll");
        $(canvasDiv).html(gadgetUtil.getCustemTextAndButton("There are no solutions to display",
         "If you want to add a new solutions please click add new solution button"));
                     var $input = $('#addbtn');
@@ -376,8 +368,6 @@ subscribe(function (topic, data, subscriber) {
 });
 
 function viewFunction(solution,id,reason,rank,rankedtime) {
-    console.log(solution);
-    console.log(reason);
     publish({
         solution: solution,
         id: id,

@@ -88,7 +88,6 @@ function subscribe(callback) {
 
 subscribe(function (topic, data, subscriber) {
     $(canvasDiv).html(gadgetUtil.getLoadingText());
-    console.log(data);
     solution = data["solution"];
     solution_id = data["id"];
     reason = data["reason"];
